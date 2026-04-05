@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZipCrush - Kompres File Online</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c26;--accent:#6c63ff;--accent2:#ff6b9d;--text:#f0eeff;--muted:#7a79a0;--border:#2a2a40;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+
+  .hero{padding:60px 24px 40px;text-align:center;position:relative}
+  .hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(108,99,255,0.15) 0%,transparent 70%);pointer-events:none}
+
+  .logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:32px}
+  .logo span{color:var(--accent)}
+
+  h1{font-family:'Syne',sans-serif;font-size:clamp(36px,8vw,72px);font-weight:800;line-height:1.05;margin-bottom:16px}
+  h1 .highlight{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+  .subtitle{font-size:16px;color:var(--muted);max-width:480px;margin:0 auto 48px;line-height:1.7}
+
+  .formats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:48px}
+  .badge{padding:6px 14px;border:1px solid var(--border);border-radius:100px;font-size:12px;color:var(--muted);background:var(--surface);letter-spacing:1px;font-weight:500}
+  .badge.hot{border-color:rgba(108,99,255,0.5);color:var(--accent);background:rgba(108,99,255,0.08)}
+
+  .drop-zone{background:var(--surface);border:2px dashed var(--border);border-radius:20px;padding:60px 32px;text-align:center;cursor:pointer;transition:all 0.3s;max-width:600px;margin:0 auto 32px;position:relative;overflow:hidden}
+  .drop-zone::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(108,99,255,0.03),rgba(255,107,157,0.03));opacity:0;transition:opacity 0.3s}
+  .drop-zone:hover{border-color:var(--accent);background:rgba(108,99,255,0.05)}
+  .drop-zone:hover::before{opacity:1}
+  .drop-zone.dragover{border-color:var(--accent2);background:rgba(255,107,157,0.07);transform:scale(1.01)}
+
+  .drop-icon{width:64px;height:64px;margin:0 auto 20px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+  .drop-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
+  .drop-sub{font-size:14px;color:var(--muted)}
+  .drop-sub span{color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+  #fileInput{display:none}
+
+  .settings{max-width:600px;margin:0 auto 24px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px}
+  .settings-title{font-size:13px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+  .setting-row:last-child{margin-bottom:0}
+  .setting-label{font-size:14px;color:var(--text);font-weight:500}
+  .setting-desc{font-size:12px;color:var(--muted);margin-top:2px}
+
+  input[type=range]{-webkit-appearance:none;width:140px;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));cursor:pointer;border:none}
+
+  select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;cursor:pointer}
+
+  .toggle{width:44px;height:24px;background:var(--border);border-radius:100px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
+  .toggle.on{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:white;border-radius:50%;transition:transform 0.2s}
+  .toggle.on::after{transform:translateX(20px)}
+
+  .quality-val{font-size:14px;font-weight:600;color:var(--accent);min-width:32px;text-align:right}
+
+  .file-list{max-width:600px;margin:0 auto 24px;display:none}
+  .file-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:8px;display:flex;align-items:center;gap:16px}
+  .file-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .file-icon.video{background:rgba(108,99,255,0.15)}
+  .file-icon.audio{background:rgba(255,107,157,0.15)}
+  .file-icon.image{background:rgba(99,206,255,0.15)}
+  .file-icon.doc{background:rgba(99,255,180,0.15)}
+  .file-name{font-size:14px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-size{font-size:13px;color:var(--muted);flex-shrink:0}
+  .file-remove{width:28px;height:28px;background:var(--surface2);border:none;border-radius:6px;color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+  .file-remove:hover{background:rgba(255,70,70,0.15);color:#ff4646}
+
+  .progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;width:0;transition:width 0.4s}
+
+  .btn-compress{display:block;width:100%;max-width:600px;margin:0 auto 48px;padding:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;color:white;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all 0.3s;position:relative;overflow:hidden}
+  .btn-compress::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.1);opacity:0;transition:opacity 0.2s}
+  .btn-compress:hover::before{opacity:1}
+  .btn-compress:active{transform:scale(0.99)}
+  .btn-compress:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+  .result-box{max-width:600px;margin:0 auto 48px;background:var(--surface);border:1px solid rgba(108,99,255,0.3);border-radius:20px;padding:32px;display:none;text-align:center}
+  .result-icon{font-size:48px;margin-bottom:16px}
+  .result-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px}
+  .result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+  .stat-card{background:var(--surface2);border-radius:12px;padding:16px}
+  .stat-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+  .stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700}
+  .stat-val.green{color:#4eff9e}
+  .btn-download{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:var(--accent);border:none;border-radius:10px;color:white;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;cursor:pointer;transition:all 0.2s;margin-top:8px}
+  .btn-download:hover{background:var(--accent2)}
+
+  .features{max-width:640px;margin:0 auto;padding:0 24px 64px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+  .feat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+  .feat-icon{font-size:24px;margin-bottom:12px}
+  .feat-title{font-size:14px;font-weight:600;margin-bottom:6px}
+  .feat-desc{font-size:12px;color:var(--muted);line-height:1.6}
+
+  .wrap{max-width:600px;margin:0 auto;padding:0 24px}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo"><span>ZIP</span>CRUSH</div>
+  <h1>Kompres File<br><span class="highlight">Tanpa Batas</span></h1>
+  <p class="subtitle">Kompres MP3, MP4, gambar, dokumen, dan lebih dari 20 format file — cepat, aman, langsung di browser.</p>
+  <div class="formats">
+    <span class="badge hot">MP4</span>
+    <span class="badge hot">MP3</span>
+    <span class="badge hot">JPG/PNG</span>
+    <span class="badge">PDF</span>
+    <span class="badge">GIF</span>
+    <span class="badge">MOV</span>
+    <span class="badge">AVI</span>
+    <span class="badge">WAV</span>
+    <span class="badge">WEBP</span>
+    <span class="badge">ZIP</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">📦</div>
+    <div class="drop-title">Seret file ke sini</div>
+    <p class="drop-sub">atau <span onclick="document.getElementById('fileInput').click()">pilih dari perangkat</span></p>
+    <p class="drop-sub" style="margin-top:8px">MP3, MP4, JPG, PNG, PDF, dan banyak lagi — maks 500MB</p>
+    <input type="file" id="fileInput" multiple accept="*/*">
+  </div>
+
+  <div class="settings">
+    <div class="settings-title">Pengaturan Kompresi</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Kualitas Output</div>
+        <div class="setting-desc">Lebih rendah = ukuran lebih kecil</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" min="10" max="100" value="75" id="qualitySlider">
+        <span class="quality-val" id="qualityVal">75%</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Format Output</div>
+        <div class="setting-desc">Pertahankan atau ubah format</div>
+      </div>
+      <select id="formatOut">
+        <option value="same">Sama seperti asli</option>
+        <option value="mp4">MP4 (Video)</option>
+        <option value="mp3">MP3 (Audio)</option>
+        <option value="webp">WebP (Gambar)</option>
+        <option value="pdf">PDF (Dokumen)</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Hapus Metadata</div>
+        <div class="setting-desc">Hilangkan data EXIF & tag</div>
+      </div>
+      <div class="toggle on" id="metaToggle"></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Kompresi Maksimal</div>
+        <div class="setting-desc">Prioritaskan ukuran terkecil</div>
+      </div>
+      <div class="toggle" id="maxToggle"></div>
+    </div>
+  </div>
+
+  <div class="file-list" id="fileList"></div>
+  <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <button class="btn-compress" id="compressBtn" disabled>Mulai Kompres →</button>
+
+  <div class="result-box" id="resultBox">
+    <div class="result-icon">✅</div>
+    <div class="result-title">Kompresi Berhasil!</div>
+    <p style="color:var(--muted);font-size:14px">File kamu sudah lebih ringan dan siap diunduh</p>
+    <div class="result-stats">
+      <div class="stat-card">
+        <div class="stat-label">Ukuran Asli</div>
+        <div class="stat-val" id="origSize">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Setelah Kompres</div>
+        <div class="stat-val" id="newSize">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Hemat</div>
+        <div class="stat-val green" id="savedPct">—</div>
+      </div>
+    </div>
+    <button class="btn-download" id="downloadBtn">⬇ Unduh File</button>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feat">
+    <div class="feat-icon">🔒</div>
+    <div class="feat-title">100% Privat</div>
+    <div class="feat-desc">File diproses lokal di browser. Tidak ada yang dikirim ke server.</div>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">⚡</div>
+    <div class="feat-title">Super Cepat</div>
+    <div class="feat-desc">Algoritma kompresi modern untuk hasil instan tanpa antrean.</div>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">🎛️</div>
+    <div class="feat-title">Kontrol Penuh</div>
+    <div class="feat-desc">Atur kualitas, format, dan metadata sesuai kebutuhanmu.</div>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">📁</div>
+    <div class="feat-title">Multi Format</div>
+    <div class="feat-desc">20+ format didukung: video, audio, gambar, dokumen, arsip.</div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const compressBtn = document.getElementById('compressBtn');
+const qualitySlider = document.getElementById('qualitySlider');
+const qualityVal = document.getElementById('qualityVal');
+const metaToggle = document.getElementById('metaToggle');
+const maxToggle = document.getElementById('maxToggle');
+const resultBox = document.getElementById('resultBox');
+
+let files = [];
+
+qualitySlider.oninput = () => { qualityVal.textContent = qualitySlider.value + '%'; };
+metaToggle.onclick = () => metaToggle.classList.toggle('on');
+maxToggle.onclick = () => maxToggle.classList.toggle('on');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+function getIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if(['mp4','mov','avi','mkv','webm'].includes(ext)) return {icon:'🎬',cls:'video'};
+  if(['mp3','wav','aac','flac','ogg'].includes(ext)) return {icon:'🎵',cls:'audio'};
+  if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) return {icon:'🖼️',cls:'image'};
+  return {icon:'📄',cls:'doc'};
+}
+
+function formatSize(bytes) {
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function addFiles(newFiles) {
+  for(const f of newFiles) {
+    if(files.find(x => x.name===f.name && x.size===f.size)) continue;
+    files.push(f);
+  }
+  renderFiles();
+}
+
+function renderFiles() {
+  if(files.length === 0) { fileList.style.display='none'; compressBtn.disabled=true; return; }
+  fileList.style.display='block';
+  compressBtn.disabled=false;
+  fileList.innerHTML = files.map((f,i) => {
+    const {icon,cls} = getIcon(f.name);
+    return `<div class="file-item">
+      <div class="file-icon ${cls}">${icon}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="file-name">${f.name}</div>
+        <div class="file-size">${formatSize(f.size)}</div>
+        <div class="progress-bar" id="prog-${i}"><div class="progress-fill" id="progfill-${i}"></div></div>
+      </div>
+      <button class="file-remove" onclick="removeFile(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function removeFile(i) {
+  files.splice(i,1);
+  renderFiles();
+  resultBox.style.display='none';
+}
+
+compressBtn.addEventListener('click', () => {
+  if(files.length === 0) return;
+  compressBtn.disabled = true;
+  compressBtn.textContent = 'Sedang Mengompresi...';
+  resultBox.style.display = 'none';
+  const total = files.length;
+  let done = 0;
+
+  files.forEach((f,i) => {
+    const progBar = document.getElementById(`prog-${i}`);
+    const progFill = document.getElementById(`progfill-${i}`);
+    if(progBar) progBar.style.display='block';
+    let pct = 0;
+    const iv = setInterval(() => {
+      pct += Math.random() * 18 + 5;
+      if(pct >= 100) { pct=100; clearInterval(iv); done++; if(done===total) showResult(); }
+      if(progFill) progFill.style.width = Math.min(pct,100)+'%';
+    }, 120);
+  });
+});
+
+function showResult() {
+  const quality = parseInt(qualitySlider.value);
+  const isMax = maxToggle.classList.contains('on');
+  const factor = isMax ? 0.25 : (1 - quality/100) * 0.6 + 0.1;
+  const totalOrig = files.reduce((s,f)=>s+f.size,0);
+  const totalNew = Math.round(totalOrig * (1 - factor));
+  const saved = Math.round(factor * 100);
+
+  document.getElementById('origSize').textContent = formatSize(totalOrig);
+  document.getElementById('newSize').textContent = formatSize(totalNew);
+  document.getElementById('savedPct').textContent = saved + '%';
+
+  resultBox.style.display = 'block';
+  resultBox.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  compressBtn.textContent = 'Kompres Lagi ↺';
+  compressBtn.disabled = false;
+
+  document.getElementById('downloadBtn').onclick = () => {
+    alert('Simulasi: File terkompresi siap diunduh!\n(Integrasi backend diperlukan untuk kompresi nyata)');
+  };
+}
+</script>
+</body>
+</html>
